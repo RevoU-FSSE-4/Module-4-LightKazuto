@@ -1,18 +1,22 @@
 import React, { useState } from "react";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import * as Yup from 'yup';
+import { useNavigate } from "react-router-dom";
+
 
 const MultiStepForm = () => {
   // Individual state hooks for each form field
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [dateOfBirth, setDateOfBirth] = useState("");
-  const [address, setAddress] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
-  const [zipCode, setZipCode] = useState("");
-  const [userName, setUserName] = useState("");
-  const [pass, setPass] = useState("");
+  const [name, setName] = useState<string>("");                
+  const [email, setEmail] = useState<string>("");
+  const [dateOfBirth, setDateOfBirth] = useState<string>("");
+  const [address, setAddress] = useState<string>("");
+  const [city, setCity] = useState<string>("");
+  const [state, setState] = useState<string>("");
+  const [zipCode, setZipCode] = useState<string>("");
+  const [userName, setUserName] = useState<string>("");
+  const [pass, setPass] = useState<string>("");
+  const navigate = useNavigate()
+  
 
 const SignupSchema = Yup.object().shape({
     name: Yup.string()
@@ -34,11 +38,11 @@ const SignupSchema = Yup.object().shape({
     .required("State is required"),
     zipCode: Yup.string()
     .required("Zip Code is required")
-    .length(5)
     .matches(/^[0-9]{5}/),
     userName: Yup.string()
     .required("Username is required"),
     pass: Yup.string()
+    .required("Password is reuired")
     .min(4, 'Password Weak')
     .matches(/^\S*$/, 'No whitespaces allowed')
     .max(10, 'Password Strong'),
@@ -46,7 +50,6 @@ const SignupSchema = Yup.object().shape({
 
 
   const [step, setStep] = useState(1);
-
 
   const nextStep = () => {
     setStep((nextStep) => nextStep + 1);
@@ -57,6 +60,37 @@ const SignupSchema = Yup.object().shape({
     setStep((prevStep) => prevStep - 1);
     console.log(step);
   };
+
+  const handleSubmit = async (values: { name: string, email: string, pass: string }) => {
+  const options = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      name: values.name,
+      email: values.email,
+      password: values.pass 
+    })
+  };
+
+  const response = await fetch('https://library-crud-sample.vercel.app/api/user/register', options);
+
+  const result = await response.json();
+
+  try {
+    if (!response.ok) {
+      alert('Register failed');
+    } else {
+      console.log('response success', result);
+      alert('Register success');
+      navigate('/');
+    }
+  } catch (error) {
+    alert(error);
+  }
+}
+  
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center">
@@ -74,10 +108,19 @@ const SignupSchema = Yup.object().shape({
           pass: ''
         }}
         validationSchema={SignupSchema}
-        onSubmit={(values, actions) =>{
-          setName(values.name)
+        onSubmit={(values, actions) => {
+          console.log('register', {
+            name: values.name, email: values.email, pass: values.pass
+          })
+          const data = {
+            name: values.name,
+            email: values.email,
+            pass: values.pass
+          }
+          if (values.name && values.email && values.pass) handleSubmit(data)
         }}
         >
+
         <Form>
           {step === 1 && (
             <div className="flex flex-col bg-white p-8 w-96 border-solid border-2 border-grey-200">
@@ -85,6 +128,7 @@ const SignupSchema = Yup.object().shape({
                 Multi-Step Form - Step {step}
               </h2>
               <Field
+                // onChange={changeName}
                 name="name"
                 type="text"
                 placeholder="Enter Your Full Name"
@@ -95,6 +139,7 @@ const SignupSchema = Yup.object().shape({
               <hr />
               </>
               <Field
+                // onChange={changeEmail}
                 type="email"
                 name="email"
                 placeholder="Enter Your Email"
@@ -161,7 +206,7 @@ const SignupSchema = Yup.object().shape({
                 placeholder="Enter Your Username"
                 className="border border-gray-300 p-2 mb-4 rounded-md"
               />
-              <ErrorMessage name='userNanme' component="div"/>
+              <ErrorMessage name='userName' component="div"/>
               <Field
                 type="password"
                 name="pass"
@@ -174,7 +219,7 @@ const SignupSchema = Yup.object().shape({
 
           {step > 1 && (
             <button
-              type="submit"
+              type="button"
               onClick={prevStep}
               className="bg-blue-500 text-white font-semibold py-2 rounded-md hover:bg-blue-600 transition-colors duration-300 w-1/2 mt-3 ">
               Previous
@@ -183,9 +228,8 @@ const SignupSchema = Yup.object().shape({
 
           {step < 3 ? (
             <button
-              type="submit"
+              type="button"
               onClick={nextStep}
-              disabled={name !=='' || email !=='' || dateOfBirth !==''}
               className="bg-blue-500 text-white font-semibold py-2 rounded-md hover:bg-blue-600 transition-colors duration-300 w-1/2 mt-3 ">
               Next
             </button>
